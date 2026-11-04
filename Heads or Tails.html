@@ -1,0 +1,658 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Heads or Tails</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap">
+<style>
+/* Layout: one narrow column. A cute bedroom scene is the stage, the throw button sits under it, stats and a flip log follow. */
+:root {
+  --bg: #ede8fb;
+  --surface: #ffffff;
+  --fg: #2b2147;
+  --muted: #6b6285;
+  --line: #d6cef0;
+  --btn: #d63b77;
+  --btn-edge: #a82a5b;
+  --btn-fg: #ffffff;
+  --win: #16845a;
+  --lose: #c2392f;
+  --font-display: "Fredoka", "Nunito", system-ui, sans-serif;
+  --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1631;
+    --surface: #261f45;
+    --fg: #f0ebff;
+    --muted: #a99fcc;
+    --line: #3a3166;
+    --btn: #ff8db5;
+    --btn-edge: #c2547f;
+    --btn-fg: #2a1130;
+    --win: #5fd6a0;
+    --lose: #ff8e84;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1631;
+  --surface: #261f45;
+  --fg: #f0ebff;
+  --muted: #a99fcc;
+  --line: #3a3166;
+  --btn: #ff8db5;
+  --btn-edge: #c2547f;
+  --btn-fg: #2a1130;
+  --win: #5fd6a0;
+  --lose: #ff8e84;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 540px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; line-height: 1.1; margin: 0; text-wrap: balance; }
+.rule { color: var(--muted); font-size: .9rem; margin: 0; font-weight: 600; }
+.rule b { color: var(--fg); }
+
+.scene-card { border-radius: 22px; overflow: hidden; border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line), 0 10px 24px rgba(60, 40, 110, .18); background: #fbe3ec; }
+svg#scene { display: block; width: 100%; height: auto; }
+svg text { font-family: "Fredoka", "Nunito", system-ui, sans-serif; }
+
+/* mood-driven face parts */
+#boy .e-happy, #boy .e-sad, #boy .m-o, #boy .m-happy, #boy .m-sad, #boy .brow-s, #boy .gloom { display: none; }
+#boy[data-mood="watch"] .m-idle { display: none; }
+#boy[data-mood="watch"] .m-o { display: inline; }
+#boy[data-mood="win"] .e-normal, #boy[data-mood="win"] .m-idle, #boy[data-mood="win"] .brow-n { display: none; }
+#boy[data-mood="win"] .e-happy, #boy[data-mood="win"] .m-happy { display: inline; }
+#boy[data-mood="win"] .blush { opacity: .95; }
+#boy[data-mood="lose"] .m-idle, #boy[data-mood="lose"] .brow-n { display: none; }
+#boy[data-mood="lose"] .e-sad, #boy[data-mood="lose"] .m-sad, #boy[data-mood="lose"] .brow-s, #boy[data-mood="lose"] .gloom { display: inline; }
+.drop { animation: drop .9s linear infinite; }
+.drop.d2 { animation-delay: .3s; }
+.drop.d3 { animation-delay: .6s; }
+@keyframes drop { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(20px); opacity: 0; } }
+.tear { animation: tear 1.4s ease-in infinite; }
+@keyframes tear { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(8px); opacity: 0; } }
+.bubble { opacity: 0; transform: scale(.6); transform-box: fill-box; transform-origin: left bottom; transition: opacity .2s, transform .28s cubic-bezier(.3, 1.6, .5, 1); }
+.bubble.show { opacity: 1; transform: scale(1); }
+
+.controls { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+button.flip {
+  font-family: var(--font-display); font-weight: 700; font-size: 1.35rem;
+  background: var(--btn); color: var(--btn-fg); border: 0; border-radius: 999px;
+  padding: 12px 44px; cursor: pointer; min-width: 240px;
+  box-shadow: 0 5px 0 var(--btn-edge);
+  transition: transform .08s, box-shadow .08s;
+}
+button.flip:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--btn-edge); }
+button.flip:disabled { opacity: .6; cursor: default; }
+button.flip:focus-visible, button.reset:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
+.result { margin: 0; min-height: 3em; text-align: center; font-weight: 700; font-size: 1.02rem; text-wrap: balance; }
+.result.pos { color: var(--win); }
+.result.neg { color: var(--lose); }
+
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px 12px; min-width: 0; }
+.label { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.stat .v { font-family: var(--font-display); font-weight: 600; font-size: 1.5rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+
+.log-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.reset { font: inherit; font-weight: 700; font-size: .8rem; color: var(--muted); background: transparent; border: 2px solid var(--line); border-radius: 999px; padding: 4px 14px; cursor: pointer; }
+button.reset:hover { color: var(--fg); border-color: var(--muted); }
+.log { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; min-height: 30px; }
+.chip { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 600; font-size: .8rem; border: 2px solid; background: var(--surface); }
+.chip.h { color: var(--win); border-color: var(--win); }
+.chip.t { color: var(--lose); border-color: var(--lose); }
+.empty { color: var(--muted); font-size: .85rem; margin: 0; }
+
+@media (max-width: 420px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  h1 { font-size: 1.6rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drop, .tear { animation: none; }
+  .bubble { transition: none; }
+  button.flip { transition: none; }
+}
+</style>
+
+<main>
+  <header>
+    <h1>Heads or Tails</h1>
+    <p class="rule"><b>Heads</b> +1 point · <b>Tails</b> −1 point</p>
+  </header>
+
+  <div class="scene-card">
+    <svg id="scene" viewBox="0 0 400 320" role="img" aria-label="A small boy in pajamas stands on a rug in his bedroom, holding a gold coin ready to throw.">
+      <defs>
+        <pattern id="wallpat" width="24" height="24" patternUnits="userSpaceOnUse">
+          <rect width="24" height="24" fill="#fbe3ec"/>
+          <circle cx="12" cy="12" r="2.6" fill="#f8cfde"/>
+        </pattern>
+        <linearGradient id="irisGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3447c9"/>
+          <stop offset="1" stop-color="#7eb6ff"/>
+        </linearGradient>
+        <radialGradient id="gold" cx=".35" cy=".3" r=".9">
+          <stop offset="0" stop-color="#ffe9a6"/>
+          <stop offset=".55" stop-color="#f1c456"/>
+          <stop offset="1" stop-color="#cc9a32"/>
+        </radialGradient>
+      </defs>
+
+      <!-- room -->
+      <rect width="400" height="234" fill="url(#wallpat)"/>
+      <rect y="226" width="400" height="9" fill="#ffffff" opacity=".9"/>
+      <rect y="234" width="400" height="86" fill="#ebc08f"/>
+      <path d="M0 254H400M0 277H400M0 300H400" stroke="#d9a872" stroke-width="1.6" fill="none"/>
+      <path d="M70 234V254M240 234V254M330 234V254M150 254V277M320 254V277M40 277V300M210 277V300M360 277V300M110 300V320M280 300V320" stroke="#d9a872" stroke-width="1.6" fill="none"/>
+
+      <!-- poster -->
+      <rect x="22" y="48" width="54" height="70" rx="5" fill="#ffffff"/>
+      <rect x="27" y="53" width="44" height="52" rx="3" fill="#c9d8ff"/>
+      <circle cx="44" cy="72" r="11" fill="#ffe08a"/>
+      <circle cx="49" cy="69" r="10" fill="#c9d8ff"/>
+      <circle cx="60" cy="62" r="1.8" fill="#ffffff"/>
+      <circle cx="36" cy="92" r="1.5" fill="#ffffff"/>
+      <circle cx="58" cy="90" r="1.5" fill="#ffffff"/>
+      <rect x="32" y="110" width="34" height="3" rx="1.5" fill="#e4c6d6"/>
+
+      <!-- window -->
+      <rect x="300" y="40" width="76" height="80" rx="6" fill="#bfe6ff"/>
+      <rect x="300" y="88" width="76" height="32" rx="0" fill="#d8f1ff"/>
+      <circle cx="354" cy="62" r="8" fill="#ffe27a"/>
+      <ellipse cx="324" cy="70" rx="12" ry="6" fill="#ffffff"/>
+      <ellipse cx="333" cy="66" rx="8" ry="6" fill="#ffffff"/>
+      <rect x="300" y="40" width="76" height="80" rx="6" fill="none" stroke="#ffffff" stroke-width="5"/>
+      <path d="M338 40V120M300 80H376" stroke="#ffffff" stroke-width="4"/>
+      <rect x="292" y="34" width="14" height="90" rx="6" fill="#f59dbb"/>
+      <rect x="370" y="34" width="14" height="90" rx="6" fill="#f59dbb"/>
+      <rect x="294" y="118" width="88" height="8" rx="3" fill="#ffffff"/>
+
+      <!-- score sign -->
+      <path d="M150 3L122 14M150 3L178 14" stroke="#c9a24b" stroke-width="2" fill="none"/>
+      <circle cx="150" cy="3" r="3" fill="#c9a24b"/>
+      <rect x="110" y="12" width="80" height="44" rx="11" fill="#fff4cc" stroke="#e8b85c" stroke-width="3"/>
+      <text x="150" y="26" text-anchor="middle" font-size="9" font-weight="600" letter-spacing="1.6" fill="#a07a2a">SCORE</text>
+      <text id="points" x="150" y="49" text-anchor="middle" font-size="26" font-weight="700" fill="#4b3b63">0</text>
+
+      <!-- rug and floor things -->
+      <ellipse cx="200" cy="281" rx="152" ry="28" fill="#bde8d5" stroke="#8fd0b6" stroke-width="3"/>
+      <ellipse cx="200" cy="281" rx="124" ry="20" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="6 6"/>
+
+      <rect x="32" y="246" width="24" height="24" rx="4" fill="#ffb3c1"/>
+      <text x="44" y="264" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">A</text>
+      <rect x="58" y="250" width="20" height="20" rx="4" fill="#a8d8ff"/>
+      <text x="68" y="265" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">B</text>
+      <g transform="rotate(-6 44 234)">
+        <rect x="33" y="223" width="22" height="22" rx="4" fill="#ffe08a"/>
+        <text x="44" y="239" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">C</text>
+      </g>
+
+      <!-- bed -->
+      <rect x="262" y="226" width="140" height="14" rx="5" fill="#b58bdb"/>
+      <rect x="268" y="240" width="8" height="9" rx="2" fill="#9a70c4"/>
+      <rect x="384" y="240" width="8" height="9" rx="2" fill="#9a70c4"/>
+      <rect x="270" y="206" width="124" height="22" rx="8" fill="#ffffff"/>
+      <rect x="270" y="196" width="96" height="34" rx="10" fill="#8fc8f5"/>
+      <path d="M290 198V228M310 198V228M330 198V228M350 198V228" stroke="#b5ddfb" stroke-width="4"/>
+      <ellipse cx="380" cy="204" rx="18" ry="11" fill="#ffffff" stroke="#e3d6f2" stroke-width="2"/>
+      <rect x="390" y="160" width="14" height="82" rx="6" fill="#b58bdb"/>
+      <rect x="262" y="198" width="9" height="44" rx="4" fill="#b58bdb"/>
+      <ellipse cx="316" cy="193" rx="14" ry="12" fill="#d9a36e"/>
+      <circle cx="306" cy="164" r="4.8" fill="#d9a36e"/>
+      <circle cx="326" cy="164" r="4.8" fill="#d9a36e"/>
+      <circle cx="306" cy="164" r="2.2" fill="#f3d6b3"/>
+      <circle cx="326" cy="164" r="2.2" fill="#f3d6b3"/>
+      <circle cx="316" cy="174" r="12.5" fill="#d9a36e"/>
+      <ellipse cx="316" cy="178" rx="5.5" ry="4" fill="#f3d6b3"/>
+      <circle cx="316" cy="176.5" r="1.7" fill="#4b3b63"/>
+      <circle cx="311.5" cy="172.5" r="1.6" fill="#4b3b63"/>
+      <circle cx="320.5" cy="172.5" r="1.6" fill="#4b3b63"/>
+
+      <!-- shadows on the rug -->
+      <ellipse id="boyShadow" cx="150" cy="268" rx="34" ry="6" fill="#000000" opacity=".14"/>
+      <ellipse id="coinShadow" cx="250" cy="280" rx="12" ry="3.4" fill="#000000" opacity="0"/>
+
+      <!-- the boy -->
+      <g id="boy" data-mood="idle" transform="translate(150 0)">
+        <g id="bob">
+          <!-- legs -->
+          <rect x="-18" y="232" width="14" height="30" rx="6" fill="#8eb6f2" stroke="#4b3b63" stroke-width="2.4"/>
+          <rect x="4" y="232" width="14" height="30" rx="6" fill="#8eb6f2" stroke="#4b3b63" stroke-width="2.4"/>
+          <ellipse cx="-11" cy="262" rx="11.5" ry="6.5" fill="#f59dbb" stroke="#4b3b63" stroke-width="2.4"/>
+          <ellipse cx="11" cy="262" rx="11.5" ry="6.5" fill="#f59dbb" stroke="#4b3b63" stroke-width="2.4"/>
+          <!-- body -->
+          <rect x="-25" y="184" width="50" height="44" rx="18" fill="#ffd66b" stroke="#4b3b63" stroke-width="2.4"/>
+          <rect x="-24" y="220" width="48" height="22" rx="10" fill="#8eb6f2" stroke="#4b3b63" stroke-width="2.4"/>
+          <circle cx="-12" cy="198" r="2.2" fill="#ffffff" opacity=".9"/>
+          <circle cx="9" cy="205" r="2.2" fill="#ffffff" opacity=".9"/>
+          <circle cx="-3" cy="212" r="2.2" fill="#ffffff" opacity=".9"/>
+          <circle cx="14" cy="194" r="2.2" fill="#ffffff" opacity=".9"/>
+          <circle cx="-15" cy="214" r="2.2" fill="#ffffff" opacity=".9"/>
+          <!-- arms -->
+          <g id="armL" transform="translate(-22 196) rotate(8)">
+            <rect x="-6.5" y="-5" width="13" height="29" rx="6.5" fill="#ffd66b" stroke="#4b3b63" stroke-width="2.4"/>
+            <circle cx="0" cy="31" r="7" fill="#ffe3cc" stroke="#4b3b63" stroke-width="2.4"/>
+          </g>
+          <g id="armR" transform="translate(22 196) rotate(-55)">
+            <rect x="-6.5" y="-5" width="13" height="29" rx="6.5" fill="#ffd66b" stroke="#4b3b63" stroke-width="2.4"/>
+            <circle cx="0" cy="31" r="7" fill="#ffe3cc" stroke="#4b3b63" stroke-width="2.4"/>
+          </g>
+          <!-- head -->
+          <g id="head">
+            <circle cx="-45" cy="152" r="7" fill="#ffe3cc" stroke="#4b3b63" stroke-width="2.4"/>
+            <circle cx="45" cy="152" r="7" fill="#ffe3cc" stroke="#4b3b63" stroke-width="2.4"/>
+            <ellipse cx="0" cy="146" rx="46" ry="42" fill="#ffe3cc" stroke="#4b3b63" stroke-width="2.4"/>
+            <ellipse class="blush" cx="-29" cy="167" rx="8.5" ry="5" fill="#ff9fb8" opacity=".6"/>
+            <ellipse class="blush" cx="29" cy="167" rx="8.5" ry="5" fill="#ff9fb8" opacity=".6"/>
+            <path d="M-2 164Q0 165.5 2 164" stroke="#d9a58a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+
+            <!-- eyes -->
+            <g id="eyeL" class="e-normal" transform="translate(-17 154)">
+              <ellipse rx="10.5" ry="13" fill="#2b2550"/>
+              <g id="pupilL">
+                <ellipse cx="0" cy="2" rx="8" ry="10.5" fill="url(#irisGrad)"/>
+                <ellipse cx="0" cy="1" rx="4.2" ry="5.2" fill="#1b1740"/>
+                <circle cx="-3.4" cy="-4.2" r="3.4" fill="#ffffff"/>
+                <circle cx="3.2" cy="5" r="1.6" fill="#ffffff"/>
+              </g>
+              <path d="M-11.5 -6Q0 -17 11.5 -6" fill="none" stroke="#2b2550" stroke-width="3" stroke-linecap="round"/>
+            </g>
+            <g id="eyeR" class="e-normal" transform="translate(17 154)">
+              <ellipse rx="10.5" ry="13" fill="#2b2550"/>
+              <g id="pupilR">
+                <ellipse cx="0" cy="2" rx="8" ry="10.5" fill="url(#irisGrad)"/>
+                <ellipse cx="0" cy="1" rx="4.2" ry="5.2" fill="#1b1740"/>
+                <circle cx="-3.4" cy="-4.2" r="3.4" fill="#ffffff"/>
+                <circle cx="3.2" cy="5" r="1.6" fill="#ffffff"/>
+              </g>
+              <path d="M-11.5 -6Q0 -17 11.5 -6" fill="none" stroke="#2b2550" stroke-width="3" stroke-linecap="round"/>
+            </g>
+            <g class="e-happy">
+              <path d="M-27 157Q-17 142 -7 157" fill="none" stroke="#2b2550" stroke-width="3.8" stroke-linecap="round"/>
+              <path d="M7 157Q17 142 27 157" fill="none" stroke="#2b2550" stroke-width="3.8" stroke-linecap="round"/>
+            </g>
+            <g class="e-sad">
+              <ellipse cx="-17" cy="164" rx="8" ry="3" fill="#9fd8ff" opacity=".8"/>
+              <ellipse cx="17" cy="164" rx="8" ry="3" fill="#9fd8ff" opacity=".8"/>
+              <g class="tear"><ellipse cx="-24" cy="170" rx="2.4" ry="3.6" fill="#9fd8ff" stroke="#6fb4e8" stroke-width=".8"/></g>
+              <g class="tear"><ellipse cx="24" cy="170" rx="2.4" ry="3.6" fill="#9fd8ff" stroke="#6fb4e8" stroke-width=".8"/></g>
+            </g>
+
+            <!-- brows -->
+            <g class="brow-n" fill="none" stroke="#3b3157" stroke-width="2.6" stroke-linecap="round">
+              <path d="M-25 139Q-17 134 -9 139"/>
+              <path d="M9 139Q17 134 25 139"/>
+            </g>
+            <g class="brow-s" fill="none" stroke="#3b3157" stroke-width="2.6" stroke-linecap="round">
+              <path d="M-26 143Q-17 136 -9 134"/>
+              <path d="M9 134Q17 136 26 143"/>
+            </g>
+
+            <!-- mouths -->
+            <path class="m-idle" d="M-6 171Q-3 175.5 0 171Q3 175.5 6 171" fill="none" stroke="#5a3a4e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <ellipse class="m-o" cx="0" cy="173" rx="3.6" ry="4.6" fill="#b0425e" stroke="#4b3b63" stroke-width="1.6"/>
+            <g class="m-happy">
+              <path d="M-11 167Q0 190 11 167Z" fill="#b0425e" stroke="#4b3b63" stroke-width="2.2" stroke-linejoin="round"/>
+              <ellipse cx="0" cy="175" rx="4.5" ry="2.4" fill="#ff8fa8"/>
+            </g>
+            <path class="m-sad" d="M-6 177Q0 170 6 177" fill="none" stroke="#5a3a4e" stroke-width="2.4" stroke-linecap="round"/>
+
+            <!-- hair -->
+            <path id="ahoge" d="M0 96C-3 84 9 80 5 68" fill="none" stroke="#3b3157" stroke-width="4.5" stroke-linecap="round"/>
+            <path d="M-46 138C-48 104 -24 92 0 92C24 92 48 104 46 138C40 124 34 118 26 114L20 130L10 112L2 130L-8 112L-16 128L-24 114C-34 118 -42 126 -46 138Z" fill="#3b3157" stroke="#2c2444" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M-46 138C-52 150 -50 164 -43 170L-40 148Z" fill="#3b3157"/>
+            <path d="M46 138C52 150 50 164 43 170L40 148Z" fill="#3b3157"/>
+            <path d="M-28 107Q-14 98 4 100" fill="none" stroke="#7566a8" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+          </g>
+
+          <!-- gloom cloud for tails -->
+          <g class="gloom">
+            <ellipse cx="-14" cy="78" rx="14" ry="9" fill="#a9bbd8"/>
+            <ellipse cx="0" cy="72" rx="17" ry="12" fill="#a9bbd8"/>
+            <ellipse cx="15" cy="78" rx="14" ry="9" fill="#a9bbd8"/>
+            <ellipse class="drop" cx="-12" cy="92" rx="1.8" ry="3" fill="#7fb7f0"/>
+            <ellipse class="drop d2" cx="0" cy="92" rx="1.8" ry="3" fill="#7fb7f0"/>
+            <ellipse class="drop d3" cx="12" cy="92" rx="1.8" ry="3" fill="#7fb7f0"/>
+          </g>
+        </g>
+      </g>
+
+      <g id="fx"></g>
+
+      <!-- the coin -->
+      <g id="coin" transform="translate(198 204)">
+        <g id="faceH">
+          <circle r="12" fill="url(#gold)" stroke="#b8862b" stroke-width="1.6"/>
+          <circle r="8.8" fill="none" stroke="#e0b24f" stroke-width="1"/>
+          <path d="M-6.2 -2L-5.6 -8.4L-1.4 -4.6ZM6.2 -2L5.6 -8.4L1.4 -4.6Z" fill="#b07a1e"/>
+          <ellipse cx="0" cy="1" rx="6.8" ry="5.6" fill="#b07a1e"/>
+          <circle cx="-2.6" cy="0.4" r="1" fill="#fff1b8"/>
+          <circle cx="2.6" cy="0.4" r="1" fill="#fff1b8"/>
+          <circle cx="0" cy="2.4" r=".8" fill="#ffd6d6"/>
+          <path d="M-1.5 3.8Q0 5 1.5 3.8" fill="none" stroke="#fff1b8" stroke-width=".6" stroke-linecap="round"/>
+        </g>
+        <g id="faceT" display="none">
+          <circle r="12" fill="url(#gold)" stroke="#b8862b" stroke-width="1.6"/>
+          <circle r="8.8" fill="none" stroke="#e0b24f" stroke-width="1"/>
+          <ellipse cx="0" cy="3" rx="4.6" ry="3.6" fill="#b07a1e"/>
+          <circle cx="-5.2" cy="-2.2" r="1.9" fill="#b07a1e"/>
+          <circle cx="-1.8" cy="-5.2" r="2" fill="#b07a1e"/>
+          <circle cx="1.8" cy="-5.2" r="2" fill="#b07a1e"/>
+          <circle cx="5.2" cy="-2.2" r="1.9" fill="#b07a1e"/>
+        </g>
+      </g>
+
+      <!-- speech bubble -->
+      <g transform="translate(212 82)">
+        <g id="bubble" class="bubble">
+          <rect x="0" y="0" width="80" height="38" rx="14" fill="#ffffff" stroke="#4b3b63" stroke-width="2.5"/>
+          <path d="M10 35L-6 50L26 35Z" fill="#ffffff"/>
+          <path d="M10 37L-6 50L24 37" fill="none" stroke="#4b3b63" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <text id="bubbleText" x="40" y="25" text-anchor="middle" font-size="15" font-weight="600" fill="#4b3b63">Yay! +1</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div class="controls">
+    <button class="flip" id="flip" type="button">Throw the coin!</button>
+    <p class="result" id="result" role="status" aria-live="polite">Kai is holding a coin. Press the button and watch him throw it.</p>
+  </div>
+
+  <section class="stats" aria-label="Statistics">
+    <div class="stat"><div class="label">Throws</div><div class="v" id="sFlips">0</div></div>
+    <div class="stat"><div class="label">Heads</div><div class="v" id="sHeads">0</div></div>
+    <div class="stat"><div class="label">Tails</div><div class="v" id="sTails">0</div></div>
+    <div class="stat"><div class="label">Streak</div><div class="v" id="sStreak">0</div></div>
+  </section>
+
+  <section>
+    <div class="log-head">
+      <div class="label">Last 20 throws, newest first</div>
+      <button class="reset" id="reset" type="button">Reset game</button>
+    </div>
+    <div class="log" id="log"><p class="empty">No throws yet.</p></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var $ = function (id) { return document.getElementById(id); };
+  var BX = 150, L = 31, REST_A = 55, RELEASE_A = 125;
+  var rm = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var STAR = 'M0 -7L2 -2.2L7 -2L3 1.4L4.4 6.5L0 3.6L-4.4 6.5L-3 1.4L-7 -2L-2 -2.2Z';
+  var HEART = 'M0 6C-9 -1 -5 -8 0 -3C5 -8 9 -1 0 6Z';
+
+  var rad = function (d) { return d * Math.PI / 180; };
+  var lerp = function (a, b, t) { return a + (b - a) * t; };
+  var clamp = function (v, a, b) { return Math.max(a, Math.min(b, v)); };
+  var easeInOut = function (t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; };
+  var easeOut = function (t) { return 1 - Math.pow(1 - t, 3); };
+  var easeIn = function (t) { return t * t; };
+  var smooth = function (a, b, x) { var t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  var fmt = function (n) { return (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n); };
+
+  var el = {
+    boy: $('boy'), bob: $('bob'), head: $('head'), armL: $('armL'), armR: $('armR'),
+    eyeL: $('eyeL'), eyeR: $('eyeR'), pupilL: $('pupilL'), pupilR: $('pupilR'), ahoge: $('ahoge'),
+    coin: $('coin'), faceH: $('faceH'), faceT: $('faceT'), coinShadow: $('coinShadow'), boyShadow: $('boyShadow'),
+    bubble: $('bubble'), bubbleText: $('bubbleText'), fx: $('fx'), points: $('points'),
+    flip: $('flip'), result: $('result'), reset: $('reset'), log: $('log'),
+    flips: $('sFlips'), heads: $('sHeads'), tails: $('sTails'), streak: $('sStreak')
+  };
+
+  var state = { score: 0, history: [] };
+  var A = { armR: REST_A, armL: 8, head: 0, jump: 0, px: 1.2, py: 1 };
+  var C = { x: 198, y: 204, sx: 1, sy: 1, s: 1, face: 'H', held: true, shadowX: 250, shadowS: 1, shadowOp: 0, ground: 272 };
+  var mood = 'idle', th = null, jumpStart = -1, particles = [];
+  var blinkAt = 2500, blinkUntil = 0, last = performance.now(), lastFace = '';
+
+  function setMood(m) { mood = m; el.boy.setAttribute('data-mood', m); }
+  function randomHeads() {
+    try { var a = new Uint32Array(1); crypto.getRandomValues(a); return (a[0] & 1) === 0; }
+    catch (e) { return Math.random() < 0.5; }
+  }
+  function streakOf(h) {
+    if (!h.length) return 0;
+    var n = 0;
+    for (var i = 0; i < h.length && h[i] === h[0]; i++) n++;
+    return n;
+  }
+
+  function render() {
+    var s = state.score;
+    el.points.textContent = fmt(s);
+    el.points.setAttribute('fill', s > 0 ? '#1e8f5a' : s < 0 ? '#d3463b' : '#4b3b63');
+    var heads = state.history.filter(function (x) { return x === 'H'; }).length;
+    el.flips.textContent = state.history.length;
+    el.heads.textContent = heads;
+    el.tails.textContent = state.history.length - heads;
+    el.streak.textContent = state.history.length ? streakOf(state.history) + '×' + state.history[0] : '0';
+    if (!state.history.length) {
+      el.log.innerHTML = '<p class="empty">No throws yet.</p>';
+    } else {
+      el.log.innerHTML = state.history.slice(0, 20).map(function (x) {
+        return '<span class="chip ' + x.toLowerCase() + '" title="' + (x === 'H' ? 'Heads, +1' : 'Tails, −1') + '">' + x + '</span>';
+      }).join('');
+    }
+  }
+
+  function spawn(n) {
+    if (rm.matches) return;
+    for (var i = 0; i < n; i++) {
+      var heart = Math.random() < 0.4;
+      var p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', heart ? HEART : STAR);
+      p.setAttribute('fill', heart ? '#ff7fa6' : (Math.random() < 0.5 ? '#ffd24d' : '#7cc8ff'));
+      p.setAttribute('stroke', '#ffffff');
+      p.setAttribute('stroke-width', '1');
+      el.fx.appendChild(p);
+      var ang = -Math.PI / 2 + (Math.random() - 0.5) * 2.4, sp = 50 + Math.random() * 70;
+      particles.push({ el: p, x: BX + (Math.random() - 0.5) * 50, y: 126 + (Math.random() - 0.5) * 20,
+        vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 0, max: 1.1 + Math.random() * 0.5,
+        rot: (Math.random() - 0.5) * 60, s: 0.8 + Math.random() * 0.7 });
+    }
+  }
+
+  function throwCoin() {
+    if (th) return;
+    var S = rm.matches ? 0.3 : 1;
+    var heads = randomHeads();
+    var yL = 268 + Math.random() * 10;
+    th = {
+      t0: performance.now(), heads: heads, S: S,
+      WU: 220 * S, SW: 170 * S, F: 950 * S, B: 300 * S,
+      a0: A.armR, xL: 236 + Math.random() * 44, yL: yL,
+      x0: BX + 22 + L * Math.sin(rad(RELEASE_A)),
+      y0: 196 + L * Math.cos(rad(RELEASE_A)) - 10,
+      turns: heads ? 6 : 6.5
+    };
+    th.H = ((th.y0 + yL) / 2 - 62) * 4 / 4;
+    C.held = true; C.s = 0; C.ground = yL;
+    setMood('watch');
+    el.bubble.classList.remove('show');
+    el.flip.disabled = true;
+    el.result.textContent = 'Up it goes…';
+    el.result.className = 'result';
+  }
+
+  function finishThrow() {
+    var heads = th.heads;
+    C.x = th.xL; C.y = th.yL; C.sx = 1; C.sy = 0.55; C.s = 1; C.face = heads ? 'H' : 'T';
+    C.held = false; C.shadowX = th.xL; C.shadowS = 1; C.shadowOp = 0.22; C.ground = th.yL;
+    th = null;
+    state.score += heads ? 1 : -1;
+    state.history.unshift(heads ? 'H' : 'T');
+    if (state.history.length > 200) state.history.length = 200;
+    setMood(heads ? 'win' : 'lose');
+    el.bubbleText.textContent = heads ? 'Yay! +1' : 'Aww… −1';
+    el.bubble.classList.add('show');
+    if (heads) { jumpStart = performance.now(); spawn(12); }
+    el.result.textContent = heads
+      ? 'Heads! Kai wins 1 point. Score: ' + fmt(state.score)
+      : 'Tails… Kai loses 1 point. Score: ' + fmt(state.score);
+    el.result.className = 'result ' + (heads ? 'pos' : 'neg');
+    render();
+    el.flip.disabled = false;
+    el.flip.focus({ preventScroll: true });
+  }
+
+  function resetGame() {
+    if (th) return;
+    state.score = 0; state.history = [];
+    setMood('idle'); jumpStart = -1; A.jump = 0;
+    C.held = true; C.s = 1;
+    el.bubble.classList.remove('show');
+    el.result.textContent = 'New game. Kai is holding a coin again.';
+    el.result.className = 'result';
+    render();
+  }
+
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    var still = rm.matches;
+    var kk = 1 - Math.exp(-dt * 12);
+    var bob = still ? 0 : Math.sin(now / 520) * 1.6;
+
+    // pose targets
+    var tR = REST_A, tL = 8, tH = 0, tpx = 1.2, tpy = 1;
+    if (mood === 'watch') { tR = 18; }
+    else if (mood === 'win') { tR = 135; tL = 135; tpx = 0; tpy = 0; }
+    else if (mood === 'lose') { tR = 8; tL = 8; tH = 6; tpx = 0; tpy = 2.4; }
+
+    // phase of the throw
+    var phase = 'rest', e = 0;
+    if (th) {
+      e = now - th.t0;
+      if (e < th.WU) phase = 'windup';
+      else if (e < th.WU + th.SW) phase = 'swing';
+      else if (e < th.WU + th.SW + th.F) phase = 'flight';
+      else if (e < th.WU + th.SW + th.F + th.B) phase = 'bounce';
+      else phase = 'done';
+    }
+    if (phase === 'windup') A.armR = lerp(th.a0, 20, easeInOut(e / th.WU));
+    else if (phase === 'swing') A.armR = lerp(20, RELEASE_A, easeIn((e - th.WU) / th.SW));
+    else A.armR += (tR - A.armR) * kk;
+    A.armL += (tL - A.armL) * kk;
+    A.head += (tH - A.head) * kk;
+
+    // jump for a win
+    if (jumpStart > 0 && !still && now - jumpStart < 560) A.jump = -16 * Math.abs(Math.sin((now - jumpStart) / 280 * Math.PI));
+    else A.jump = 0;
+
+    // coin
+    if (phase === 'windup' || phase === 'swing' || (phase === 'rest' && C.held)) {
+      C.x = BX + 22 + L * Math.sin(rad(A.armR));
+      C.y = 196 + L * Math.cos(rad(A.armR)) + A.jump + bob - 10;
+      C.sx = 1; C.sy = 1; C.face = 'H';
+      C.s = th ? easeOut(clamp(e / 180, 0, 1)) : 1;
+      C.shadowOp = 0;
+    } else if (phase === 'flight') {
+      var u = (e - th.WU - th.SW) / th.F;
+      C.x = lerp(th.x0, th.xL, u);
+      C.y = lerp(th.y0, th.yL, u) - 4 * th.H * u * (1 - u);
+      var p = 1 - Math.pow(1 - u, 1.6);
+      var c = Math.cos(th.turns * 2 * Math.PI * p);
+      C.face = c >= 0 ? 'H' : 'T';
+      C.sx = 1; C.s = 1;
+      C.sy = Math.max(Math.abs(c), 0.07) * (1 - 0.45 * smooth(0.82, 1, u));
+      var hg = Math.max(0, th.yL - C.y);
+      C.shadowX = C.x; C.shadowS = 1 / (1 + hg / 110); C.shadowOp = 0.3 * C.shadowS;
+    } else if (phase === 'bounce') {
+      var u2 = (e - th.WU - th.SW - th.F) / th.B;
+      var h = 16 * Math.abs(Math.sin(u2 * Math.PI * 2)) * (1 - u2);
+      C.x = th.xL; C.y = th.yL - h;
+      C.face = th.heads ? 'H' : 'T'; C.sx = 1; C.sy = 0.55; C.s = 1;
+      C.shadowX = C.x; C.shadowS = 1 / (1 + h / 60); C.shadowOp = 0.28 * C.shadowS;
+    } else if (phase === 'done') {
+      finishThrow();
+    }
+
+    // eyes follow the coin while it is in play
+    if (mood === 'watch') {
+      tpx = clamp((C.x - BX) / 14, -2.4, 2.4);
+      tpy = clamp((C.y - 150) / 22, -2.6, 2.6);
+    }
+    A.px += (tpx - A.px) * kk;
+    A.py += (tpy - A.py) * kk;
+
+    // blink
+    if (!still && now > blinkAt) { blinkUntil = now + 130; blinkAt = now + 2600 + Math.random() * 2600; }
+    var bs = now < blinkUntil ? 0.12 : 1;
+
+    // apply to the scene
+    el.boy.setAttribute('transform', 'translate(' + BX + ' ' + A.jump.toFixed(2) + ')');
+    el.bob.setAttribute('transform', 'translate(0 ' + bob.toFixed(2) + ')');
+    el.armR.setAttribute('transform', 'translate(22 196) rotate(' + (-A.armR).toFixed(2) + ')');
+    el.armL.setAttribute('transform', 'translate(-22 196) rotate(' + A.armL.toFixed(2) + ')');
+    el.head.setAttribute('transform', 'rotate(' + A.head.toFixed(2) + ' 0 188)');
+    var pt = 'translate(' + A.px.toFixed(2) + ' ' + A.py.toFixed(2) + ')';
+    el.pupilL.setAttribute('transform', pt);
+    el.pupilR.setAttribute('transform', pt);
+    el.eyeL.setAttribute('transform', 'translate(-17 154) scale(1 ' + bs + ')');
+    el.eyeR.setAttribute('transform', 'translate(17 154) scale(1 ' + bs + ')');
+    var sway = still ? 0 : Math.sin(now / 700) * 4;
+    el.ahoge.setAttribute('transform', 'rotate(' + ((mood === 'lose' ? -20 : 0) + sway).toFixed(2) + ' 0 96)');
+    var jf = 1 + A.jump / 70;
+    el.boyShadow.setAttribute('rx', (34 * jf).toFixed(2));
+    el.boyShadow.setAttribute('opacity', (0.14 * jf).toFixed(3));
+
+    var sc = Math.max(C.s, 0.001);
+    el.coin.setAttribute('transform', 'translate(' + C.x.toFixed(2) + ' ' + C.y.toFixed(2) + ') scale(' + (C.sx * sc).toFixed(3) + ' ' + (C.sy * sc).toFixed(3) + ')');
+    if (C.face !== lastFace) {
+      lastFace = C.face;
+      el.faceH.setAttribute('display', C.face === 'H' ? 'inline' : 'none');
+      el.faceT.setAttribute('display', C.face === 'T' ? 'inline' : 'none');
+    }
+    el.coinShadow.setAttribute('cx', C.shadowX.toFixed(2));
+    el.coinShadow.setAttribute('cy', (C.ground + 9).toFixed(2));
+    el.coinShadow.setAttribute('rx', (12 * C.shadowS).toFixed(2));
+    el.coinShadow.setAttribute('ry', (3.4 * C.shadowS).toFixed(2));
+    el.coinShadow.setAttribute('opacity', C.shadowOp.toFixed(3));
+
+    // sparkles
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var q = particles[i];
+      q.life += dt; q.vy += 90 * dt; q.x += q.vx * dt; q.y += q.vy * dt;
+      var t = q.life / q.max;
+      if (t >= 1) { el.fx.removeChild(q.el); particles.splice(i, 1); continue; }
+      var op = t < 0.7 ? 1 : (1 - t) / 0.3;
+      var s = q.s * (t < 0.15 ? t / 0.15 : 1);
+      q.el.setAttribute('transform', 'translate(' + q.x.toFixed(1) + ' ' + q.y.toFixed(1) + ') rotate(' + (q.rot * t * 3).toFixed(0) + ') scale(' + s.toFixed(2) + ')');
+      q.el.setAttribute('opacity', op.toFixed(2));
+    }
+    requestAnimationFrame(frame);
+  }
+
+  el.flip.addEventListener('click', throwCoin);
+  el.reset.addEventListener('click', resetGame);
+
+  function start(data) {
+    if (data && typeof data.score === 'number' && Array.isArray(data.history)) {
+      state.score = data.score; state.history = data.history;
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+  try {
+    var hotApi = window.claude && window.claude.hot;
+    if (hotApi && hotApi.snapshot) hotApi.snapshot(function () { return { score: state.score, history: state.history }; });
+  } catch (err) {}
+  var hot = window.claude && window.claude.hot;
+  if (hot && hot.ready) hot.ready(start); else start(hot && hot.data ? hot.data : {});
+})();
+</script>
+
+</body></html>
