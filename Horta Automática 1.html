@@ -1,0 +1,918 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Horta Automática</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: wallet bar on top; a 4x4 field of plots with a farmer walking a serpentine path, next to an upgrades card (4 phase upgrades + walking speed). Stacks on phones. */
+:root {
+  --bg: #e8eee2;
+  --panel: #f6f9f2;
+  --fg: #1d2a1a;
+  --muted: #59695a;
+  --line: #cbd6c3;
+  --grass: #a6cf86;
+  --grass-2: #9dc87d;
+  --dry: #cfae7c;
+  --dry-edge: #ad8a58;
+  --soil: #8a6040;
+  --soil-edge: #5e3f27;
+  --furrow: #7b5033;
+  --leaf: #3c9a3b;
+  --leaf-2: #2f7f30;
+  --carrot: #f08a24;
+  --gold: #e7a713;
+  --gold-ink: #3a2700;
+  --c0: #b8702f;
+  --c1: #7fae2f;
+  --c2: #2f86d0;
+  --c3: #e7a713;
+  --c4: #8a6fd1;
+  --c5: #c8473a;
+  --c6: #1fa39a;
+  --track: rgba(30, 20, 10, 0.32);
+  --shirt: #c8473a;
+  --denim: #3d63a8;
+  --straw: #e6c25a;
+  --skin: #f0c29a;
+  --boot: #4a3526;
+  --can: #8fa6b8;
+  --water: #2f86d0;
+  --font-display: 'Bagel Fat One', 'Arial Rounded MT Bold', 'Trebuchet MS', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131a11;
+    --panel: #1c2618;
+    --fg: #e6efdf;
+    --muted: #9fb094;
+    --line: #2f3d2a;
+    --grass: #2f4a27;
+    --grass-2: #35542c;
+    --dry: #7d6644;
+    --dry-edge: #5d4a30;
+    --soil: #52392a;
+    --soil-edge: #2e1f15;
+    --furrow: #4a3322;
+    --leaf: #5cbd54;
+    --leaf-2: #46a040;
+    --carrot: #f59a3c;
+    --gold: #f0b93a;
+    --gold-ink: #2e1f00;
+    --c0: #d98f4a;
+    --c1: #9ccc52;
+    --c2: #5aa9ee;
+    --c3: #f0b93a;
+    --c4: #a48df0;
+    --c5: #e36a5c;
+    --c6: #4cc9c0;
+    --track: rgba(0, 0, 0, 0.5);
+    --shirt: #d9594b;
+    --denim: #5b82c8;
+    --straw: #e9cb6d;
+    --can: #a6bccd;
+    --water: #5aa9ee;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131a11;
+  --panel: #1c2618;
+  --fg: #e6efdf;
+  --muted: #9fb094;
+  --line: #2f3d2a;
+  --grass: #2f4a27;
+  --grass-2: #35542c;
+  --dry: #7d6644;
+  --dry-edge: #5d4a30;
+  --soil: #52392a;
+  --soil-edge: #2e1f15;
+  --furrow: #4a3322;
+  --leaf: #5cbd54;
+  --leaf-2: #46a040;
+  --carrot: #f59a3c;
+  --gold: #f0b93a;
+  --gold-ink: #2e1f00;
+  --c0: #d98f4a;
+  --c1: #9ccc52;
+  --c2: #5aa9ee;
+  --c3: #f0b93a;
+  --c4: #a48df0;
+  --c5: #e36a5c;
+  --c6: #4cc9c0;
+  --track: rgba(0, 0, 0, 0.5);
+  --shirt: #d9594b;
+  --denim: #5b82c8;
+  --straw: #e9cb6d;
+  --can: #a6bccd;
+  --water: #5aa9ee;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  background: var(--bg);
+  color: var(--fg);
+  padding-block: 20px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.app { max-width: 1020px; margin-inline: auto; display: flex; flex-direction: column; gap: 16px; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.5rem, 4.5vw, 2rem);
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.wallet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 16px 5px 7px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.wallet svg { width: 28px; height: 28px; flex: none; }
+.wallet small { font-family: var(--font-body); font-size: 0.9rem; font-weight: 700; color: var(--muted); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.layout > * { min-width: 0; }
+@media (max-width: 800px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.field-card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 12px; }
+.field {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(5px, 1.4vw, 9px);
+  padding: clamp(10px, 2.4vw, 16px);
+  border-radius: 12px;
+  background-color: var(--grass);
+  background-image: repeating-linear-gradient(90deg, transparent 0 22px, var(--grass-2) 22px 24px);
+}
+
+/* ---- plot: layers from bottom to top = dry ground, plowed soil (wipes in), seeds (wipes in), wetness, crop, pips, bar ---- */
+.plot {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background-color: var(--dry);
+  box-shadow: inset 0 -5px 0 var(--dry-edge);
+}
+.dry, .seeds { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.dry .crack { fill: none; stroke: var(--dry-edge); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; opacity: 0.7; }
+.dry .tuft { fill: var(--leaf); }
+.till {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: var(--soil);
+  background-image: repeating-linear-gradient(180deg, transparent 0 10px, var(--furrow) 10px 13px);
+  box-shadow: inset 0 -5px 0 var(--soil-edge);
+  clip-path: inset(0 calc((1 - var(--till, 0)) * 100%) 0 0);
+}
+.seeds {
+  opacity: var(--so, 1);
+  clip-path: inset(0 calc((1 - var(--seed, 0)) * 100%) 0 0);
+}
+.seeds circle { fill: #ecd48f; stroke: #6b4a2a; stroke-width: 0.7; }
+.wet { position: absolute; inset: 0; border-radius: inherit; background: var(--soil-edge); opacity: calc(var(--w, 0) * 0.38); pointer-events: none; }
+.crop {
+  position: absolute;
+  left: 43%;
+  bottom: 12%;
+  width: 50%;
+  aspect-ratio: 60 / 70;
+  height: auto;
+  overflow: visible;
+  transform-origin: 50% 85.7%;
+  transform: scale(var(--g, 0));
+}
+.crop .root { opacity: var(--r, 0); }
+.plot[data-act="3"] .crop { animation: sway 0.5s ease-in-out infinite alternate; }
+@keyframes sway { from { rotate: -3deg; } to { rotate: 3deg; } }
+
+.pips { position: absolute; left: 6px; top: 6px; display: flex; gap: 3px; z-index: 2; }
+.pips i { width: 7px; height: 7px; border-radius: 50%; background: var(--pc); opacity: 0.28; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35); }
+.pips i:nth-child(1) { --pc: var(--c0); }
+.pips i:nth-child(2) { --pc: var(--c1); }
+.pips i:nth-child(3) { --pc: var(--c2); }
+.pips i:nth-child(4) { --pc: var(--c3); }
+.plot[data-stage="1"] .pips i:nth-child(-n+1),
+.plot[data-stage="2"] .pips i:nth-child(-n+2),
+.plot[data-stage="3"] .pips i:nth-child(-n+3) { opacity: 1; }
+
+.bar { position: absolute; left: 6px; right: 6px; bottom: 5px; height: 6px; border-radius: 3px; background: var(--track); opacity: 0; transition: opacity 0.2s; z-index: 2; }
+.plot[data-act] .bar { opacity: 1; }
+.bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--c0); }
+.plot[data-act="1"] .bar i { background: var(--c1); }
+.plot[data-act="2"] .bar i { background: var(--c2); }
+.plot[data-act="3"] .bar i { background: var(--c3); }
+
+.plot[data-gold] .crop { filter: drop-shadow(0 0 5px rgba(255, 214, 74, 0.95)); }
+.plot[data-gold] .crop .lf2 { fill: #d9a516; }
+.plot[data-gold] .crop .lf { fill: #f5c935; }
+.plot[data-gold] .crop .root { fill: #ffe27a; }
+.spark { position: absolute; right: 7%; top: 9%; width: 20%; aspect-ratio: 1; z-index: 3; fill: #fff3b0; stroke: #e7a713; stroke-width: 1.5; stroke-linejoin: round; display: none; pointer-events: none; }
+.plot[data-gold] .spark { display: block; animation: twinkle 1s ease-in-out infinite alternate; }
+@keyframes twinkle { from { transform: scale(0.65) rotate(0deg); opacity: 0.7; } to { transform: scale(1.1) rotate(25deg); opacity: 1; } }
+.pop.gold { font-size: 1.5rem; color: #ffd54a; animation-duration: 1.4s; }
+.pop {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  z-index: 6;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--gold);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 0 6px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  animation: pop 0.95s ease-out forwards;
+}
+@keyframes pop {
+  0% { opacity: 0; transform: translate(-50%, 4px) scale(0.6); }
+  20% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -30px) scale(1); }
+}
+
+/* ---- farmer ---- */
+.farmer { position: absolute; left: 0; top: 0; z-index: 5; pointer-events: none; will-change: transform; }
+.farmer.f1 { --shirt: #2f8f6b; }
+.farmer.f2 { --shirt: #8a56c2; }
+.farmer.f3 { --shirt: #2f7fc0; }
+.farmer .face { width: 100%; height: 100%; transform: scaleX(var(--face, 1)); transform-origin: 50% 100%; }
+.farmer .bob { width: 100%; height: 100%; }
+.farmer svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.farmer.is-move .bob { animation: bob 0.28s ease-in-out infinite alternate; }
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+.tool { display: none; transform-box: fill-box; transform-origin: 0% 100%; }
+.farmer.tool-plow .t-plow, .farmer.tool-sow .t-sow, .farmer.tool-water .t-water, .farmer.tool-harvest .t-harvest { display: inline; }
+.fx { display: none; }
+.farmer.is-act .fx { display: inline; }
+.farmer.is-act .t-plow { animation: hoe 0.6s ease-in infinite alternate; }
+@keyframes hoe { from { transform: rotate(-22deg); } to { transform: rotate(34deg); } }
+.farmer.is-act .t-sow { animation: shake 0.35s ease-in-out infinite alternate; }
+@keyframes shake { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+.farmer.is-act .t-water { animation: tilt 1.1s ease-in-out infinite alternate; }
+@keyframes tilt { from { transform: rotate(4deg); } to { transform: rotate(16deg); } }
+.farmer.is-act .t-harvest { animation: swing 0.4s ease-in-out infinite alternate; }
+@keyframes swing { from { transform: rotate(-55deg); } to { transform: rotate(25deg); } }
+.drop { animation: fall 0.6s linear infinite; }
+.drop:nth-child(2) { animation-delay: 0.2s; }
+.drop:nth-child(3) { animation-delay: 0.4s; }
+@keyframes fall { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(5px, 24px); opacity: 0; } }
+.grain { animation: sprinkle 0.5s linear infinite; }
+.grain:nth-child(2) { animation-delay: 0.17s; }
+.grain:nth-child(3) { animation-delay: 0.34s; }
+@keyframes sprinkle { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(-4px, 18px); opacity: 0; } }
+
+.reset { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.reset button { font: 700 0.9rem var(--font-body); min-height: 44px; border-radius: 10px; cursor: pointer; padding: 8px 14px; }
+.reset button:focus-visible { outline: 3px solid var(--water); outline-offset: 3px; }
+.reset-btn { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.reset-btn:hover { color: var(--fg); border-color: var(--muted); }
+.reset-ask p { margin: 0 0 10px; font-size: 0.9rem; color: var(--fg); }
+.reset-row { display: flex; gap: 8px; }
+.reset-row button { flex: 1; }
+.reset-yes { background: #c8473a; color: #fff; border: 0; }
+.reset-no { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+.reset-ask[hidden] { display: none; }
+.legend { margin: 12px 4px 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 11px 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--cc); }
+.chip.on { color: var(--fg); font-weight: 700; border-color: var(--cc); box-shadow: 0 0 0 1px var(--cc); }
+.status { margin: 8px 4px 2px; font-size: 0.92rem; color: var(--muted); min-height: 1.5em; }
+
+/* ---- shop ---- */
+.shop { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+.shop-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.3rem; line-height: 1.1; }
+.rate { font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sub { margin: 14px 0 2px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.up { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.up:last-child { border-bottom: 0; }
+.up-name { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.swatch { width: 10px; height: 10px; border-radius: 50%; background: var(--uc); flex: none; }
+.lv { font-family: var(--font-mono); font-weight: 400; font-size: 0.75rem; padding: 1px 7px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); }
+.up-stat { font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.buy {
+  min-width: 96px;
+  min-height: 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font: 700 0.8rem/1.15 var(--font-body);
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.28);
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.buy .price { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.buy:hover:not(:disabled) { filter: brightness(1.05); }
+.buy:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.28); }
+.buy:focus-visible { outline: 3px solid var(--water); outline-offset: 3px; }
+.buy:disabled { background: var(--line); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+
+@media (prefers-reduced-motion: reduce) {
+  .farmer .bob, .tool, .drop, .grain, .spark, .plot[data-act="3"] .crop { animation: none !important; }
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <h1>Horta Automática</h1>
+    <div class="wallet" aria-live="polite" aria-label="Dinheiro">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="11" fill="var(--gold)"/>
+        <circle cx="12" cy="12" r="7.5" fill="none" stroke="var(--gold-ink)" stroke-opacity="0.35" stroke-width="1.6"/>
+        <path d="M8 8.5c1.2-1.2 2.6-1.8 4-1.8" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span id="money">0</span><small>€</small>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="field-card">
+      <div class="field" id="field">
+        <div class="farmer" id="farmer">
+          <div class="face" id="face"><div class="bob">
+            <svg viewBox="0 0 48 64" aria-label="Agricultor" role="img">
+              <ellipse cx="24" cy="61" rx="13" ry="3" fill="#000" fill-opacity="0.25"/>
+              <rect x="15" y="44" width="8" height="14" rx="2" fill="var(--denim)"/>
+              <rect x="25" y="44" width="8" height="14" rx="2" fill="var(--denim)"/>
+              <rect x="14" y="56" width="10" height="5" rx="2" fill="var(--boot)"/>
+              <rect x="24" y="56" width="10" height="5" rx="2" fill="var(--boot)"/>
+              <rect x="12" y="27" width="24" height="21" rx="6" fill="var(--shirt)"/>
+              <path d="M16 33h16v13a2 2 0 0 1-2 2H18a2 2 0 0 1-2-2z" fill="var(--denim)"/>
+              <circle cx="24" cy="21" r="8" fill="var(--skin)"/>
+              <circle cx="22.5" cy="21.5" r="1.2" fill="#2b1d12"/>
+              <circle cx="28" cy="21.5" r="1.2" fill="#2b1d12"/>
+              <ellipse cx="24" cy="15" rx="17" ry="4" fill="var(--straw)"/>
+              <path d="M15 15C15 5 33 5 33 15z" fill="var(--straw)"/>
+              <rect x="15.5" y="12" width="17" height="2.6" fill="var(--shirt)"/>
+              <rect x="30" y="29" width="6" height="12" rx="3" fill="var(--shirt)"/>
+              <circle cx="33" cy="41.5" r="3" fill="var(--skin)"/>
+
+              <g class="tool t-plow">
+                <path d="M34 41L47 15" stroke="#7a5336" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+                <path d="M43 17L52 13L54 17L45 21.5Z" fill="#9aa5ad"/>
+              </g>
+              <g class="tool t-sow">
+                <path d="M33 38q6-4 11 0l-1.5 10q-4 2.5-8 0z" fill="#c9a66b"/>
+                <path d="M35 38.5q3.5-2 7 0" stroke="#7a5336" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+                <g class="fx">
+                  <circle class="grain" cx="31" cy="46" r="1.5" fill="#ecd48f" stroke="#6b4a2a" stroke-width="0.5"/>
+                  <circle class="grain" cx="33" cy="46" r="1.5" fill="#ecd48f" stroke="#6b4a2a" stroke-width="0.5"/>
+                  <circle class="grain" cx="29" cy="46" r="1.5" fill="#ecd48f" stroke="#6b4a2a" stroke-width="0.5"/>
+                </g>
+              </g>
+              <g class="tool t-water">
+                <rect x="33" y="37" width="12" height="9" rx="2" fill="var(--can)"/>
+                <path d="M44 39L51 32" stroke="var(--can)" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+                <path d="M33 39q-5 0-5 4.5t5 4.5" stroke="var(--can)" stroke-width="2" stroke-linecap="round" fill="none"/>
+                <g class="fx">
+                  <circle class="drop" cx="52" cy="34" r="1.6" fill="var(--water)"/>
+                  <circle class="drop" cx="53" cy="34" r="1.6" fill="var(--water)"/>
+                  <circle class="drop" cx="51" cy="34" r="1.6" fill="var(--water)"/>
+                </g>
+              </g>
+              <g class="tool t-harvest">
+                <path d="M34 38L42 23" stroke="#7a5336" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+                <path d="M42 23q10-2 10 8q-6-5-10-8z" fill="#c9d2d8"/>
+              </g>
+            </svg>
+          </div></div>
+        </div>
+      </div>
+      <div class="legend" id="legend"></div>
+      <p class="status" id="status">A preparar o campo…</p>
+    </section>
+
+    <aside class="shop">
+      <div class="shop-head">
+        <h2>Melhorias</h2>
+        <span class="rate" id="rate"></span>
+      </div>
+      <p class="sub">Fases da horta</p>
+      <div id="ups-phase"></div>
+      <p class="sub">Colheita</p>
+      <div id="ups-value"></div>
+      <p class="sub">Equipa</p>
+      <div id="ups-team"></div>
+      <div class="reset">
+        <button class="reset-btn" id="reset" type="button">Recomeçar do início</button>
+        <div class="reset-ask" id="resetAsk" hidden>
+          <p>Isto apaga o dinheiro, as melhorias e os agricultores. Tens a certeza?</p>
+          <div class="reset-row">
+            <button class="reset-yes" id="resetYes" type="button">Sim, recomeçar</button>
+            <button class="reset-no" id="resetNo" type="button">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var COLS = 4, ROWS = 4, N = COLS * ROWS;
+  var BASE_VALUE = 8;        // € por colheita, nível 0
+  var VALUE_GAIN = 1.25;     // cada nível de valor: ×1,25
+  var GROWTH = 1.45;         // cada nível de fase/andar custa 45% mais
+  var VALUE_GROWTH = 1.55;
+  var TIME_GAIN = 0.25;      // tempo = base / (1 + 0.25 × nível)
+  var FARMER_COSTS = [0, 500, 5000, 50000]; // custo de contratar o 2.º, 3.º e 4.º (índice = nº atual)
+  var MAX_FARMERS = FARMER_COSTS.length;
+  var AX = 0.2, AY = 0.8;    // onde o agricultor se põe dentro do talhão
+  var KEY = 'horta-automatica-v2';
+
+  // Fases por ordem: um talhão passa por 0 → 1 → 2 → 3 e a colheita volta ao 0.
+  var PHASES = [
+    { id: 'plow',    name: 'Arar',   verb: 'arar',   base: 2.4, cost: 10 },
+    { id: 'sow',     name: 'Semear', verb: 'semear', base: 1.8, cost: 10 },
+    { id: 'water',   name: 'Regar',  verb: 'regar',  base: 3.0, cost: 14 },
+    { id: 'harvest', name: 'Colher', verb: 'colher', base: 1.8, cost: 14 }
+  ];
+  var WALK = { base: 0.9, step: 0.3, cost: 12 }; // quadrados por segundo
+  var VALUE_COST = 20;
+  var GOLD_MULT = 5;         // legume dourado paga ×5
+  var LUCK_BASE = 0.02, LUCK_STEP = 0.01, LUCK_MAX = 0.5; // chance de dourado
+  var LUCK_COST = 100, LUCK_GROWTH = 1.8;                 // caro e a subir depressa
+  var TOOLS = ['plow', 'sow', 'water', 'harvest'];
+
+  var nf0 = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 0 });
+  var nf1 = new Intl.NumberFormat('pt-PT', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  var nf2 = new Intl.NumberFormat('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var nfc = new Intl.NumberFormat('pt-PT', { notation: 'compact', maximumFractionDigits: 1 });
+  function fmt(n) { return n >= 100000 ? nfc.format(n) : nf0.format(n); }
+  function secs(v) { return (v < 1 ? nf2 : nf1).format(v) + ' s'; }
+  function $(id) { return document.getElementById(id); }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  var field = $('field'), farmerTpl = $('farmer'), legendEl = $('legend');
+  var moneyEl = $('money'), rateEl = $('rate'), statusEl = $('status');
+  farmerTpl.parentNode.removeChild(farmerTpl);
+  farmerTpl.removeAttribute('id');
+
+  // ---------- estado ----------
+  var money = 0;
+  var levels = { plow: 0, sow: 0, water: 0, harvest: 0, walk: 0, value: 0, luck: 0 };
+  var farmerCount = 1;
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY));
+    if (saved && isFinite(saved.money)) money = Math.max(0, Math.floor(saved.money));
+    if (saved && saved.levels) {
+      Object.keys(levels).forEach(function (k) {
+        var v = saved.levels[k];
+        if (isFinite(v)) levels[k] = Math.max(0, Math.floor(v));
+      });
+    }
+    if (saved && isFinite(saved.farmers)) farmerCount = clamp(Math.floor(saved.farmers), 1, MAX_FARMERS);
+  } catch (e) { /* sem armazenamento: começa do zero */ }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify({ money: money, levels: levels, farmers: farmerCount })); } catch (e) {}
+  }
+
+  function phaseTimeAt(i, l) { return PHASES[i].base / (1 + TIME_GAIN * l); }
+  function phaseTime(i) { return phaseTimeAt(i, levels[PHASES[i].id]); }
+  function speedAt(l) { return WALK.base + WALK.step * l; }
+  function walkSpeed() { return speedAt(levels.walk); }
+  function valueAt(l) { return Math.round(BASE_VALUE * Math.pow(VALUE_GAIN, l)); }
+  function harvestValue() { return valueAt(levels.value); }
+  function luckAt(l) { return Math.min(LUCK_MAX, LUCK_BASE + LUCK_STEP * l); }
+  function luckChance() { return luckAt(levels.luck); }
+
+  // ---------- campo ----------
+  var DRY_SVG =
+    '<svg class="dry" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
+    '<path class="crack" d="M10 24L26 32L35 25M26 32L30 48"/>' +
+    '<path class="crack" d="M58 72L72 64L90 72M72 64L77 50"/>' +
+    '<path class="tuft" d="M52 30L50 20L55 26L57 16L60 26L65 21L63 30Z"/>' +
+    '<path class="tuft" d="M14 88L12 79L17 84L19 75L22 84L26 80L25 88Z"/>' +
+    '</svg>';
+  var SEEDS_SVG = '<svg class="seeds" viewBox="0 0 100 100" aria-hidden="true">' +
+    [[20,20],[40,16],[60,22],[80,18],[28,38],[50,42],[70,36],[86,44],[22,58],[44,62],[64,56],[82,66],[30,80],[54,84]]
+      .map(function (p) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="2.3"/>'; }).join('') +
+    '</svg>';
+  var PLOT_HTML =
+    DRY_SVG +
+    '<div class="till"></div>' + SEEDS_SVG + '<div class="wet"></div>' +
+    '<svg class="crop" viewBox="0 0 60 70" aria-hidden="true">' +
+    '<path class="lf2" d="M30 60C22 46 12 38 8 24C20 28 29 42 30 60Z" fill="var(--leaf-2)"/>' +
+    '<path class="lf2" d="M30 60C38 46 48 38 52 24C40 28 31 42 30 60Z" fill="var(--leaf-2)"/>' +
+    '<path class="lf" d="M30 60C25 42 25 24 30 6C35 24 35 42 30 60Z" fill="var(--leaf)"/>' +
+    '<ellipse class="root" cx="30" cy="60" rx="10" ry="5.5" fill="var(--carrot)"/>' +
+    '</svg><svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6z"/></svg><div class="pips"><i></i><i></i><i></i><i></i></div><div class="bar"><i></i></div>';
+
+  var plots = [], stages = [], claim = [], gold = [];
+  for (var i = 0; i < N; i++) {
+    var el = document.createElement('div');
+    el.className = 'plot';
+    el.innerHTML = PLOT_HTML;
+    field.appendChild(el);
+    plots.push({ el: el, fill: el.querySelector('.bar i'), key: '' });
+    stages.push(Math.floor(Math.random() * 4)); // campo inicial aleatório
+    gold.push(false);
+    claim.push(-1);                             // que agricultor está neste talhão (-1 = ninguém)
+  }
+  if (stages.indexOf(3) < 0) stages[Math.floor(Math.random() * N)] = 3; // pelo menos uma colheita à vista
+  stages.forEach(function (st, q) { if (st >= 2) gold[q] = Math.random() < luckChance(); });
+
+  // Caminho em serpentina: linhas pares da esquerda para a direita, ímpares ao contrário.
+  var order = [];
+  for (var r = 0; r < ROWS; r++) {
+    for (var k = 0; k < COLS; k++) {
+      var c = r % 2 === 0 ? k : COLS - 1 - k;
+      order.push(r * COLS + c);
+    }
+  }
+
+  legendEl.innerHTML = PHASES.map(function (p, n) {
+    return '<span class="chip" style="--cc:var(--c' + n + ')"><i></i>' + p.name + '</span>';
+  }).join('');
+  var chips = legendEl.querySelectorAll('.chip');
+
+  // ---------- medidas do campo ----------
+  var M = { w: 80, l: 0, t: 0, sx: 90, sy: 90, fw: 40, fh: 53 };
+  var farmers = [];
+  function measure() {
+    var a = plots[0].el, b = plots[1].el, d = plots[COLS].el;
+    M.w = a.offsetWidth;
+    M.l = a.offsetLeft;
+    M.t = a.offsetTop;
+    M.sx = (b.offsetLeft - a.offsetLeft) || M.w;
+    M.sy = (d.offsetTop - a.offsetTop) || M.w;
+    M.fw = clamp(M.w * 0.5, 30, 58);
+    M.fh = M.fw * 64 / 48;
+    farmers.forEach(function (f) { f.el.style.width = M.fw + 'px'; f.el.style.height = M.fh + 'px'; });
+  }
+  measure();
+  if (window.ResizeObserver) { new ResizeObserver(measure).observe(field); }
+  window.addEventListener('resize', measure);
+
+  function targetFor(idx) {
+    var c = idx % COLS, rr = Math.floor(idx / COLS);
+    return { x: c + AX * M.w / M.sx, y: rr + AY * M.w / M.sy };
+  }
+
+  // ---------- agricultores ----------
+  // Cada um faz UMA fase por visita: chega, trabalha essa fase, e segue para o próximo talhão livre do caminho.
+  // Dois agricultores nunca partilham um talhão: quem escolhe um talhão "reserva-o" até acabar.
+  function addFarmer() {
+    var id = farmers.length;
+    // começa no ponto do caminho mais afastado dos outros
+    var start = -1, bestGap = -1;
+    for (var s = 0; s < N; s++) {
+      var gap = N;
+      farmers.forEach(function (o) {
+        var d = Math.abs(o.seq - s); d = Math.min(d, N - d);
+        if (d < gap) gap = d;
+      });
+      if (gap > bestGap) { bestGap = gap; start = s; }
+    }
+    var el = farmerTpl.cloneNode(true);
+    el.classList.add('f' + id);
+    el.style.width = M.fw + 'px';
+    el.style.height = M.fh + 'px';
+    field.appendChild(el);
+    var t = targetFor(order[start]);
+    var f = {
+      id: id, el: el, faceEl: el.querySelector('.face'),
+      seq: start - 1, target: -1, phase: 'move', prog: 0, face: 1,
+      pos: { x: id === 0 ? t.x - 1 : -0.6, y: t.y },
+      cls: '', shownFace: 0
+    };
+    if (id === 0) f.seq = -1;
+    farmers.push(f);
+    return f;
+  }
+
+  function pickTarget(f) {
+    for (var j = 1; j <= N; j++) {
+      var s = ((f.seq + j) % N + N) % N;
+      if (claim[order[s]] === -1) {
+        f.seq = s; f.target = order[s]; claim[f.target] = f.id;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function stepFarmer(f, dt, events) {
+    var guard = 0;
+    while (dt > 1e-9 && guard++ < 200000) {
+      if (f.target < 0 && !pickTarget(f)) return; // todos ocupados: espera
+      var idx = f.target;
+      if (f.phase === 'move') {
+        var t = targetFor(idx);
+        var dx = t.x - f.pos.x, dy = t.y - f.pos.y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        var sp = walkSpeed();
+        var need = dist / sp;
+        if (Math.abs(dx) > 0.001) f.face = dx > 0 ? 1 : -1;
+        if (need <= dt) {
+          f.pos.x = t.x; f.pos.y = t.y;
+          dt -= need;
+          f.phase = 'act'; f.prog = 0; f.face = 1;
+        } else {
+          f.pos.x += dx / dist * sp * dt;
+          f.pos.y += dy / dist * sp * dt;
+          dt = 0;
+        }
+      } else {
+        var dur = phaseTime(stages[idx]);
+        var left = (1 - f.prog) * dur;
+        if (left <= dt) {
+          dt -= left;
+          if (stages[idx] === 3) {
+            var v = harvestValue();
+            var gd = gold[idx];
+            if (gd) v *= GOLD_MULT;
+            money += v;
+            events.push({ idx: idx, v: v, gold: gd });
+            gold[idx] = false;
+            stages[idx] = 0;
+          } else {
+            if (stages[idx] === 1) gold[idx] = Math.random() < luckChance(); // sorteio ao semear
+            stages[idx] += 1;
+          }
+          claim[idx] = -1; f.target = -1;
+          f.phase = 'move'; f.prog = 0;
+        } else {
+          f.prog += dt / dur;
+          dt = 0;
+        }
+      }
+    }
+  }
+
+  function advance(dt, events) {
+    while (dt > 1e-9) {
+      var s = dt > 5 ? 0.25 : dt;
+      dt -= s;
+      for (var q = 0; q < farmers.length; q++) stepFarmer(farmers[q], s, events);
+    }
+  }
+
+  for (var n = 0; n < farmerCount; n++) addFarmer();
+
+  // ---------- desenho ----------
+  function applyPlot(p, stage, acting, pr, isGold) {
+    var till, seed = 0, so = 1, g = 0, root = 0, wet = 0;
+    till = stage >= 1 ? 1 : (acting ? pr : 0);
+    if (stage === 1) seed = acting ? pr : 0;
+    else if (stage === 2) { seed = 1; so = acting ? Math.max(0, 1 - pr * 3) : 1; }
+    if (stage === 2 && acting) { g = 0.12 + 0.88 * pr; root = clamp((pr - 0.6) / 0.4, 0, 1); wet = pr; }
+    else if (stage === 3) { g = acting ? 1 - pr : 1; root = 1; wet = 1; }
+    var s = p.el.style;
+    s.setProperty('--till', till.toFixed(3));
+    s.setProperty('--seed', seed.toFixed(3));
+    s.setProperty('--so', so.toFixed(3));
+    s.setProperty('--g', g.toFixed(3));
+    s.setProperty('--r', root.toFixed(3));
+    s.setProperty('--w', wet.toFixed(3));
+    p.el.setAttribute('data-stage', stage);
+    if (isGold && (stage === 3 || (stage === 2 && acting))) p.el.setAttribute('data-gold', ''); else p.el.removeAttribute('data-gold');
+    if (acting) p.el.setAttribute('data-act', stage); else p.el.removeAttribute('data-act');
+    p.fill.style.width = acting ? (pr * 100).toFixed(1) + '%' : '0%';
+  }
+  function spawnPop(plotEl, v, isGold) {
+    var s = document.createElement('span');
+    s.className = 'pop' + (isGold ? ' gold' : '');
+    s.textContent = (isGold ? '★ ' : '') + '+' + fmt(v) + ' €';
+    plotEl.appendChild(s);
+    setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, isGold ? 1500 : 1100);
+  }
+
+  // ---------- loja ----------
+  function phaseCost(u) { return Math.round(u.cost * Math.pow(GROWTH, levels[u.id])); }
+  var UPS = PHASES.map(function (p, n) {
+    return {
+      id: p.id, name: p.name, color: n, group: 'ups-phase', label: 'Melhorar',
+      lvText: function () { return 'Nv ' + levels[p.id]; },
+      stat: function () { return secs(phaseTimeAt(n, levels[p.id])) + ' → ' + secs(phaseTimeAt(n, levels[p.id] + 1)); },
+      cost: function () { return Math.round(p.cost * Math.pow(GROWTH, levels[p.id])); },
+      buy: function () { levels[p.id] += 1; }
+    };
+  });
+  UPS.push({
+    id: 'value', name: 'Valor da colheita', color: 3, group: 'ups-value', label: 'Melhorar',
+    lvText: function () { return 'Nv ' + levels.value; },
+    stat: function () { return valueAt(levels.value) + ' € → ' + valueAt(levels.value + 1) + ' € por colheita'; },
+    cost: function () { return Math.round(VALUE_COST * Math.pow(VALUE_GROWTH, levels.value)); },
+    buy: function () { levels.value += 1; }
+  });
+  UPS.push({
+    id: 'luck', name: 'Sorte', color: 6, group: 'ups-value', label: 'Melhorar',
+    lvText: function () { return 'Nv ' + levels.luck; },
+    stat: function () {
+      return nf1.format(luckAt(levels.luck) * 100) + '% → ' + nf1.format(luckAt(levels.luck + 1) * 100) + '% dourado (×' + GOLD_MULT + ')';
+    },
+    cost: function () { return levels.luck >= (LUCK_MAX - LUCK_BASE) / LUCK_STEP ? Infinity : Math.round(LUCK_COST * Math.pow(LUCK_GROWTH, levels.luck)); },
+    buy: function () { levels.luck += 1; }
+  });
+  UPS.push({
+    id: 'walk', name: 'Andar', color: 4, group: 'ups-team', label: 'Melhorar',
+    lvText: function () { return 'Nv ' + levels.walk; },
+    stat: function () { return nf1.format(speedAt(levels.walk)) + ' → ' + nf1.format(speedAt(levels.walk + 1)) + ' quadr./s'; },
+    cost: function () { return Math.round(WALK.cost * Math.pow(GROWTH, levels.walk)); },
+    buy: function () { levels.walk += 1; }
+  });
+  UPS.push({
+    id: 'hire', name: 'Agricultores', color: 5, group: 'ups-team', label: 'Contratar',
+    lvText: function () { return farmerCount + ' / ' + MAX_FARMERS; },
+    stat: function () { return farmerCount >= MAX_FARMERS ? 'Equipa completa' : 'Mais um a trabalhar em paralelo'; },
+    cost: function () { return farmerCount >= MAX_FARMERS ? Infinity : FARMER_COSTS[farmerCount]; },
+    buy: function () { farmerCount += 1; addFarmer(); }
+  });
+
+  UPS.forEach(function (u) {
+    var row = document.createElement('div');
+    row.className = 'up';
+    row.style.setProperty('--uc', 'var(--c' + u.color + ')');
+    row.innerHTML =
+      '<div><div class="up-name"><span class="swatch"></span>' + u.name + '<span class="lv"></span></div>' +
+      '<div class="up-stat"></div></div>' +
+      '<button class="buy" type="button"><span class="bl">' + u.label + '</span><span class="price"></span></button>';
+    $(u.group).appendChild(row);
+    u.lv = row.querySelector('.lv');
+    u.statEl = row.querySelector('.up-stat');
+    u.btn = row.querySelector('.buy');
+    u.bl = row.querySelector('.bl');
+    u.price = row.querySelector('.price');
+    u.btn.addEventListener('click', function () { buy(u); });
+  });
+
+  function buy(u) {
+    var c = u.cost();
+    if (money < c) return;
+    money -= c;
+    u.buy();
+    save();
+    shopKey = '';
+    refreshShop();
+  }
+
+  var shopKey = '';
+  function refreshShop() {
+    var key = money + ':' + Object.keys(levels).map(function (k) { return levels[k]; }).join(',') + ':' + farmerCount;
+    if (key === shopKey) return;
+    shopKey = key;
+    UPS.forEach(function (u) {
+      var c = u.cost();
+      u.lv.textContent = u.lvText();
+      u.statEl.textContent = u.stat();
+      if (c === Infinity) {
+        u.price.textContent = 'Máximo';
+        u.bl.textContent = '';
+        u.btn.disabled = true;
+        u.btn.setAttribute('aria-label', u.name + ': máximo atingido');
+      } else {
+        u.bl.textContent = u.label;
+        u.price.textContent = fmt(c) + ' €';
+        u.btn.disabled = money < c;
+        u.btn.setAttribute('aria-label', u.label + ' ' + u.name + ' por ' + c + ' euros');
+      }
+    });
+    var cycle = 4 / walkSpeed() + phaseTime(0) + phaseTime(1) + phaseTime(2) + phaseTime(3);
+    rateEl.textContent = '≈ ' + fmt(Math.round(farmers.length * harvestValue() * (1 + luckChance() * (GOLD_MULT - 1)) * 60 / cycle)) + ' € / min';
+  }
+
+  var shownMoney = -1, shownStatus = '', lastChips = '';
+  var note = { text: '', until: 0 };
+
+  function render(events, live, now) {
+    // quem está a trabalhar em cada talhão
+    var actProg = [];
+    for (var i = 0; i < N; i++) actProg.push(-1);
+    var chipOn = [false, false, false, false], working = 0;
+    farmers.forEach(function (f) {
+      if (f.phase === 'act' && f.target >= 0) {
+        actProg[f.target] = f.prog;
+        chipOn[stages[f.target]] = true;
+        working++;
+      }
+    });
+    for (var j = 0; j < N; j++) {
+      var p = plots[j], a = actProg[j] >= 0;
+      var key = stages[j] + (gold[j] ? 'g' : '') + (a ? ':' + actProg[j].toFixed(3) : '');
+      if (key !== p.key) { p.key = key; applyPlot(p, stages[j], a, a ? actProg[j] : 0, gold[j]); }
+    }
+    if (live) {
+      for (var e = 0; e < events.length && e < 4; e++) spawnPop(plots[events[e].idx].el, events[e].v, events[e].gold);
+    }
+
+    farmers.forEach(function (f) {
+      var acting = f.phase === 'act';
+      var tool = f.target >= 0 ? TOOLS[stages[f.target]] : 'plow';
+      var cls = 'farmer f' + f.id + ' tool-' + tool + (acting ? ' is-act' : ' is-move');
+      if (cls !== f.cls) { f.cls = cls; f.el.className = cls; }
+      if (f.shownFace !== f.face) { f.shownFace = f.face; f.faceEl.style.setProperty('--face', f.face); }
+      var px = M.l + f.pos.x * M.sx, py = M.t + f.pos.y * M.sy;
+      f.el.style.transform = 'translate(' + (px - M.fw / 2).toFixed(1) + 'px,' + (py - M.fh).toFixed(1) + 'px)';
+    });
+
+    var chipKey = chipOn.join();
+    if (chipKey !== lastChips) {
+      lastChips = chipKey;
+      for (var q = 0; q < chips.length; q++) chips[q].classList.toggle('on', chipOn[q]);
+    }
+
+    if (money !== shownMoney) { shownMoney = money; moneyEl.textContent = fmt(money); }
+    refreshShop();
+
+    var text, f0 = farmers[0];
+    if (now < note.until) text = note.text;
+    else if (farmers.length === 1) {
+      var st = f0.target >= 0 ? stages[f0.target] : 0;
+      var label = 'talhão ' + (f0.seq + 1);
+      text = f0.phase === 'act'
+        ? 'A ' + PHASES[st].verb + ' o ' + label + ' · ' + Math.floor(f0.prog * 100) + '%'
+        : 'A caminhar para o ' + label + ' · a seguir: ' + PHASES[st].verb;
+    } else {
+      text = farmers.length + ' agricultores · ' + working + ' a trabalhar, ' + (farmers.length - working) + ' a caminhar';
+    }
+    if (text !== shownStatus) { shownStatus = text; statusEl.textContent = text; }
+  }
+
+
+  // ---------- recomeçar ----------
+  var resetBtn = $('reset'), resetAsk = $('resetAsk');
+  resetBtn.addEventListener('click', function () { resetBtn.hidden = true; resetAsk.hidden = false; $('resetNo').focus(); });
+  $('resetNo').addEventListener('click', function () { resetAsk.hidden = true; resetBtn.hidden = false; resetBtn.focus(); });
+  $('resetYes').addEventListener('click', function () {
+    money = 0;
+    Object.keys(levels).forEach(function (k) { levels[k] = 0; });
+    farmerCount = 1;
+    farmers.forEach(function (f) { if (f.el.parentNode) f.el.parentNode.removeChild(f.el); });
+    farmers.length = 0;
+    for (var q = 0; q < N; q++) { claim[q] = -1; stages[q] = Math.floor(Math.random() * 4); gold[q] = false; plots[q].key = ''; }
+    if (stages.indexOf(3) < 0) stages[Math.floor(Math.random() * N)] = 3;
+    stages.forEach(function (st, q) { if (st >= 2) gold[q] = Math.random() < luckChance(); });
+    addFarmer();
+    shopKey = ''; shownMoney = -1; shownStatus = '';
+    note.until = 0;
+    save();
+    resetAsk.hidden = true; resetBtn.hidden = false;
+    refreshShop();
+  });
+
+  // ---------- ciclo principal ----------
+  var last = performance.now();
+  function frame(now) {
+    var dt = (now - last) / 1000;
+    last = now;
+    if (!(dt > 0)) dt = 0;
+    var away = dt > 1.5;
+    if (dt > 28800) dt = 28800; // máximo 8 h offline
+    var before = money;
+    var events = [];
+    advance(dt, events);
+    if (away && money > before) {
+      note.text = 'Enquanto estiveste fora, ganhaste ' + fmt(money - before) + ' €.';
+      note.until = now + 6000;
+    }
+    render(events, !away, now);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  setInterval(save, 4000);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) save(); });
+  window.addEventListener('pagehide', save);
+})();
+</script>
+
+</body></html>
